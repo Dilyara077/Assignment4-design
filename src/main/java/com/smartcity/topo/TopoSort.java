@@ -1,20 +1,24 @@
 package com.smartcity.topo;
 
+import com.smartcity.utils.SimpleMetrics;
 import java.util.*;
 
 public class TopoSort {
-    private Map<String, List<String>> graph;
-    public TopoSort(Map<String, List<String>> graph) {
-        this.graph = graph;
+
+    private final SimpleMetrics metrics;
+
+    public TopoSort(SimpleMetrics metrics) {
+        this.metrics = metrics;
     }
 
-    public static List<String> sort(Map<String, List<String>> graph) {
+    public List<String> sort(Map<String, List<String>> graph) {
+        metrics.start();
         Set<String> visited = new HashSet<>();
         Stack<String> stack = new Stack<>();
 
         for (String node : graph.keySet()) {
             if (!visited.contains(node)) {
-                dfs(node, visited, stack, graph);
+                dfs(node, graph, visited, stack);
             }
         }
 
@@ -22,16 +26,20 @@ public class TopoSort {
         while (!stack.isEmpty()) {
             result.add(stack.pop());
         }
+
+        metrics.stop();
         return result;
     }
 
-    private static void dfs(String node, Set<String> visited, Stack<String> stack, Map<String, List<String>> graph) {
+    private void dfs(String node, Map<String, List<String>> graph, Set<String> visited, Stack<String> stack) {
+        metrics.incrementOps();
         visited.add(node);
         for (String neighbor : graph.getOrDefault(node, Collections.emptyList())) {
             if (!visited.contains(neighbor)) {
-                dfs(neighbor, visited, stack, graph);
+                dfs(neighbor, graph, visited, stack);
             }
         }
         stack.push(node);
     }
 }
+

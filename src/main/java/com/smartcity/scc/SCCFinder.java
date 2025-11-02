@@ -1,24 +1,28 @@
 package com.smartcity.scc;
 
+import com.smartcity.utils.SimpleMetrics;
 import java.util.*;
 
 public class SCCFinder {
 
-    public List<List<String>> findSCC(Map<String, List<String>> graph) {
-        Set<String> visited = new HashSet<>();
-        Stack<String> stack = new Stack<>();
+    private final SimpleMetrics metrics;
 
-        // 1. Заполняем стек по завершению DFS
+    public SCCFinder(SimpleMetrics metrics) {
+        this.metrics = metrics;
+    }
+
+    public List<List<String>> findSCC(Map<String, List<String>> graph) {
+        metrics.start();
+        Stack<String> stack = new Stack<>();
+        Set<String> visited = new HashSet<>();
+
         for (String node : graph.keySet()) {
             if (!visited.contains(node)) {
-                fillOrder(node, visited, stack, graph);
+                dfs(graph, node, visited, stack);
             }
         }
 
-        // 2. Строим транспонированный граф
-        Map<String, List<String>> transposed = transpose(graph);
-
-        // 3. Извлекаем вершины из стека и находим компоненты
+        Map<String, List<String>> reversed = reverseGraph(graph);
         visited.clear();
         List<List<String>> sccList = new ArrayList<>();
 
@@ -26,44 +30,45 @@ public class SCCFinder {
             String node = stack.pop();
             if (!visited.contains(node)) {
                 List<String> component = new ArrayList<>();
-                dfsTransposed(node, visited, transposed, component);
+                dfsCollect(reversed, node, visited, component);
                 sccList.add(component);
             }
         }
 
+        metrics.stop();
         return sccList;
     }
 
-    private void fillOrder(String node, Set<String> visited, Stack<String> stack, Map<String, List<String>> graph) {
+    private void dfs(Map<String, List<String>> graph, String node, Set<String> visited, Stack<String> stack) {
+        metrics.incrementOps();
         visited.add(node);
-        for (String neighbor : graph.getOrDefault(node, new ArrayList<>())) {
+        for (String neighbor : graph.getOrDefault(node, Collections.emptyList())) {
             if (!visited.contains(neighbor)) {
-                fillOrder(neighbor, visited, stack, graph);
+                dfs(graph, neighbor, visited, stack);
             }
         }
         stack.push(node);
     }
 
-    private Map<String, List<String>> transpose(Map<String, List<String>> graph) {
-        Map<String, List<String>> transposed = new HashMap<>();
-        for (String node : graph.keySet()) {
-            for (String neighbor : graph.get(node)) {
-                transposed.computeIfAbsent(neighbor, k -> new ArrayList<>()).add(node);
-            }
-        }
-        for (String node : graph.keySet()) {
-            transposed.putIfAbsent(node, new ArrayList<>());
-        }
-        return transposed;
-    }
-
-    private void dfsTransposed(String node, Set<String> visited, Map<String, List<String>> graph, List<String> component) {
+    private void dfsCollect(Map<String, List<String>> graph, String node, Set<String> visited, List<String> component) {
+        metrics.incrementOps();
         visited.add(node);
         component.add(node);
-        for (String neighbor : graph.getOrDefault(node, new ArrayList<>())) {
+        for (String neighbor : graph.getOrDefault(node, Collections.emptyList())) {
             if (!visited.contains(neighbor)) {
-                dfsTransposed(neighbor, visited, graph, component);
+                dfsCollect(graph, neighbor, visited, component);
             }
         }
+    }
+
+    private Map<String, List<String>> reverseGraph(Map<String, List<String>> graph) {
+        Map<String, List<String>> reversed = new HashMap<>();
+        for (String node : graph.keySet()) {
+            for (String neighbor : graph.getOrDefault(node, Collections.emptyList())) {
+                reversed.computeIfAbsent(neighbor, k -> new ArrayList<>()).add(node);
+                metrics.incrementOps();
+            }
+        }
+        return reversed;
     }
 }

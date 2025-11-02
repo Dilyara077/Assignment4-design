@@ -2,53 +2,46 @@ package com.smartcity.main;
 
 import com.smartcity.scc.SCCFinder;
 import com.smartcity.topo.TopoSort;
-import com.smartcity.dagsp.DagShortestPath;
+import com.smartcity.dag.DagShortestPath;
+import com.smartcity.utils.SimpleMetrics;
 import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
 
-        // ===== Strongly Connected Components =====
-        System.out.println("=== Strongly Connected Components ===");
-        Map<String, List<String>> graphSCC = new LinkedHashMap<>();
-        graphSCC.put("A", Arrays.asList("B"));
-        graphSCC.put("B", Arrays.asList("C"));
-        graphSCC.put("C", Arrays.asList("A", "D"));
-        graphSCC.put("D", Arrays.asList("E"));
-        graphSCC.put("E", Collections.emptyList());
+        // === Пример графа ===
+        Map<String, List<String>> graph = new LinkedHashMap<>();
+        graph.put("A", Arrays.asList("B", "C"));
+        graph.put("B", Arrays.asList("D"));
+        graph.put("C", Arrays.asList("D"));
+        graph.put("D", Arrays.asList("E"));
+        graph.put("E", Collections.emptyList());
 
-        SCCFinder sccFinder = new SCCFinder();
-        List<List<String>> components = sccFinder.findSCC(graphSCC);
-        for (List<String> comp : components) {
-            System.out.println(comp);
-        }
+        // === Создаём измеритель ===
+        SimpleMetrics metrics = new SimpleMetrics();
 
-        // ===== Topological Sort =====
-        System.out.println("\n=== Topological Sort ===");
-        Map<String, List<String>> graphTopo = new LinkedHashMap<>();
-        graphTopo.put("A", Arrays.asList("B", "C"));
-        graphTopo.put("B", Arrays.asList("D"));
-        graphTopo.put("C", Arrays.asList("D"));
-        graphTopo.put("D", Collections.emptyList());
+        // === Алгоритм 1: Strongly Connected Components ===
+        SCCFinder sccFinder = new SCCFinder(metrics);
+        System.out.println("SCC components: " + sccFinder.findSCC(graph));
+        System.out.println("SCC Time (ns): " + metrics.getTimeNano());
+        System.out.println("SCC Ops: " + metrics.getOpsCount());
+        System.out.println("-----------------------------------");
 
-        TopoSort topo = new TopoSort(graphTopo);
-        List<String> topoOrder = topo.sort(graphTopo);
-        System.out.println("Topological order: " + topoOrder);
+        // === Алгоритм 2: Topological Sort ===
+        metrics = new SimpleMetrics(); // новый таймер
+        TopoSort topoSort = new TopoSort(metrics);
+        System.out.println("Topo Sort: " + topoSort.sort(graph));
+        System.out.println("Topo Time (ns): " + metrics.getTimeNano());
+        System.out.println("Topo Ops: " + metrics.getOpsCount());
+        System.out.println("-----------------------------------");
 
-        // ===== DAG Shortest Path =====
-        System.out.println("\n=== DAG Shortest Path ===");
-        Map<String, List<DagShortestPath.Edge>> dag = new LinkedHashMap<>();
-        dag.put("A", Arrays.asList(new DagShortestPath.Edge("B", 2), new DagShortestPath.Edge("C", 1)));
-        dag.put("B", Arrays.asList(new DagShortestPath.Edge("D", 2)));
-        dag.put("C", Arrays.asList(new DagShortestPath.Edge("D", 3)));
-        dag.put("D", Collections.emptyList());
-
-        DagShortestPath dsp = new DagShortestPath(dag);
-        Map<String, Integer> shortestPaths = dsp.shortestPath("A");
-
-        for (String node : shortestPaths.keySet()) {
-            System.out.println("Shortest distance from A to " + node + " = " + shortestPaths.get(node));
-        }
+        // === Алгоритм 3: DAG Shortest Path ===
+        metrics = new SimpleMetrics(); // новый таймер
+        DagShortestPath dag = new DagShortestPath(metrics);
+        System.out.println("Shortest Paths from A:");
+        System.out.println(dag.shortestPath(graph, "A"));
+        System.out.println("DAG Time (ns): " + metrics.getTimeNano());
+        System.out.println("DAG Ops: " + metrics.getOpsCount());
     }
 }
 
