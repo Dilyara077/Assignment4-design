@@ -1,3 +1,4 @@
+//Added second commit for SCCFinder tests
 package com.smartcity.scc;
 
 import org.junit.jupiter.api.Test;
