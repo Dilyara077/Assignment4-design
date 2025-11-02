@@ -3,6 +3,10 @@ package com.smartcity.topo;
 import java.util.*;
 
 public class TopoSort {
+    private Map<String, List<String>> graph;
+    public TopoSort(Map<String, List<String>> graph) {
+        this.graph = graph;
+    }
 
     public static List<String> sort(Map<String, List<String>> graph) {
         Set<String> visited = new HashSet<>();
