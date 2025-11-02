@@ -1,49 +1,72 @@
 package com.smartcity.dagsp;
 
-import com.smartcity.topo.TopoSort;
 import java.util.*;
 
 public class DagShortestPath {
 
-    public static Map<String, Integer> findShortestPaths(Map<String, List<Edge>> graph, String startNode) {
+    private final Map<String, List<Edge>> graph;
 
-        Map<String, List<String>> simpleGraph = new LinkedHashMap<>();
+    public DagShortestPath(Map<String, List<Edge>> graph) {
+        this.graph = graph;
+    }
+
+    public Map<String, Integer> shortestPath(String start) {
+        Map<String, Integer> distance = new HashMap<>();
+
         for (String node : graph.keySet()) {
-            List<String> neighbors = new ArrayList<>();
-            for (Edge e : graph.get(node)) {
-                neighbors.add(e.to);
-            }
-            simpleGraph.put(node, neighbors);
+            distance.put(node, Integer.MAX_VALUE);
         }
-        List<String> topoOrder = TopoSort.sort(simpleGraph);
+        distance.put(start, 0);
 
-
-        Map<String, Integer> dist = new HashMap<>();
-        for (String node : graph.keySet()) {
-            dist.put(node, Integer.MAX_VALUE);
-        }
-        dist.put(startNode, 0);
+        List<String> topoOrder = topologicalSort();
 
         for (String node : topoOrder) {
-            if (dist.get(node) != Integer.MAX_VALUE) {
+            if (distance.get(node) != Integer.MAX_VALUE) {
                 for (Edge edge : graph.getOrDefault(node, Collections.emptyList())) {
-                    int newDist = dist.get(node) + edge.weight;
-                    if (newDist < dist.get(edge.to)) {
-                        dist.put(edge.to, newDist);
+                    int newDist = distance.get(node) + edge.weight;
+                    if (newDist < distance.get(edge.target)) {
+                        distance.put(edge.target, newDist);
                     }
                 }
             }
         }
-        return dist;
+
+        return distance;
     }
 
+    private List<String> topologicalSort() {
+        Set<String> visited = new HashSet<>();
+        Stack<String> stack = new Stack<>();
+
+        for (String node : graph.keySet()) {
+            if (!visited.contains(node)) {
+                dfs(node, visited, stack);
+            }
+        }
+
+        List<String> order = new ArrayList<>();
+        while (!stack.isEmpty()) {
+            order.add(stack.pop());
+        }
+        return order;
+    }
+
+    private void dfs(String node, Set<String> visited, Stack<String> stack) {
+        visited.add(node);
+        for (Edge edge : graph.getOrDefault(node, Collections.emptyList())) {
+            if (!visited.contains(edge.target)) {
+                dfs(edge.target, visited, stack);
+            }
+        }
+        stack.push(node);
+    }
 
     public static class Edge {
-        public String to;
+        public String target;
         public int weight;
 
-        public Edge(String to, int weight) {
-            this.to = to;
+        public Edge(String target, int weight) {
+            this.target = target;
             this.weight = weight;
         }
     }
